@@ -46,11 +46,11 @@ fun main(args: Array<String>) {
 }
 
 fun <A> get(path: String, extractor: (String) -> A): Either<ConfigError, A> = try {
-    Either.right(extractor(path))
+    Either.Right(extractor(path))
 } catch (e: ConfigException.Missing) {
-    Either.left(ConfigError.ParameterIsMissing(path))
+    Either.Left(ConfigError.ParameterIsMissing(path))
 } catch (e: ConfigException.WrongType) {
-    Either.left(ConfigError.CouldNotParse)
+    Either.Left(ConfigError.CouldNotParse)
 }
 
 fun validateBusinessConfig(config: Config): ValidatedNel<ConfigError, BusinessConfig> = run {
