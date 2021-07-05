@@ -8,7 +8,7 @@ import javax.validation.Payload
 
 @Target(AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.CLASS, AnnotationTarget.ANNOTATION_CLASS)
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = [])
+@Constraint(validatedBy = [ThresholdConstraintValidator::class])
 annotation class ThresholdConstraint(
 
     val message: String = "{ThresholdConstraint.message}",
