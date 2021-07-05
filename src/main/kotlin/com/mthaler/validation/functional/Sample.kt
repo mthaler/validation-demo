@@ -1,30 +1,20 @@
-//package com.mthaler.validation.arrow
-//
-//import arrow.core.*
-//import arrow.data.*
-//import arrow.data.Nel
-//import arrow.data.Validated
-//import arrow.data.ValidatedNel
-//import arrow.data.invalidNel
-//import arrow.data.k
-//import arrow.typeclasses.binding
-//import com.google.common.net.HostAndPort
-//import com.typesafe.config.Config
-//import com.typesafe.config.ConfigException
-//import com.typesafe.config.ConfigFactory
-//import org.slf4j.LoggerFactory
-//import java.lang.IllegalArgumentException
-//
-///**
-// *
-// */
-//
-//fun main(args: Array<String>) {
-//
-//    val log = LoggerFactory.getLogger("KotlinArrowSample")
-//
-//    val config = ConfigFactory.load()
-//
+package com.mthaler.validation.functional
+
+import arrow.core.*
+import com.typesafe.config.ConfigException
+import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
+
+/**
+ *
+ */
+
+fun main(args: Array<String>) {
+
+    val log = LoggerFactory.getLogger("KotlinArrowSample")
+
+    val config = ConfigFactory.load()
+
 //    val businessValidation = validateBusinessConfig(config)
 //    val kafkaValidation = validateKafkaConfig(config)
 //
@@ -38,17 +28,17 @@
 //    })
 //
 //    log.info(toLog)
-//
-//}
-//
-//fun <A> get(path: String, extractor: (String) -> A): Either<ConfigError, A> = try {
-//    Either.Right(extractor(path))
-//} catch (e: ConfigException.Missing) {
-//    Either.Left(ConfigError.ParameterIsMissing(path))
-//} catch (e: ConfigException.WrongType) {
-//    Either.Left(ConfigError.CouldNotParse)
-//}
-//
+
+}
+
+fun <A> get(path: String, extractor: (String) -> A): ValidatedNel<ConfigError, A> = try {
+    Valid(extractor(path))
+} catch (e: ConfigException.Missing) {
+    ConfigError.ParameterIsMissing(path).invalidNel()
+} catch (e: ConfigException.WrongType) {
+    ConfigError.CouldNotParse.invalidNel()
+}
+
 //fun validateBusinessConfig(config: Config): ValidatedNel<ConfigError, BusinessConfig> = run {
 //    val unvalidatedTAE = get("app.thresholdA", { p -> config.getInt(p)})
 //    val tAe = unvalidatedTAE.flatMap { unvalidatedTa ->
