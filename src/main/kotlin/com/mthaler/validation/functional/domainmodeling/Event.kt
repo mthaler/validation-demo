@@ -1,6 +1,8 @@
 package com.mthaler.validation.functional.domainmodeling
 
 import arrow.core.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 
 data class ValidationError(val reason: String)
@@ -51,7 +53,7 @@ data class Event(
 )
 
 suspend fun generateId(): Long =
-    -1L
+    -1
 
 suspend fun date(): LocalDate =
     LocalDate.now()
@@ -62,3 +64,11 @@ suspend fun createEvent(): ValidatedNel<ValidationError, Event> =
         Organizer.create(""),
         Description.create("")
     ) { id, title, organizer, description -> Event(id, title, organizer, description, date()) }
+
+fun main() {
+    runBlocking {
+        launch {
+            println(createEvent())
+        }
+    }
+}

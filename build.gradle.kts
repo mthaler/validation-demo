@@ -15,6 +15,7 @@ repositories {
 dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0")
 	implementation("io.arrow-kt:arrow-core:0.13.2")
 	implementation("io.arrow-kt:arrow-data:0.8.2")
 	implementation("com.typesafe:config:1.4.1")
