@@ -1,6 +1,10 @@
 package com.mthaler.validation.functional
 
 import arrow.core.*
+import arrow.typeclasses.Monoid
+import arrow.typeclasses.Semigroup
+import com.google.common.net.HostAndPort
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
@@ -82,29 +86,28 @@ fun <A> get(path: String, extractor: (String) -> A): ValidatedNel<ConfigError, A
 //    }).fix()
 //}
 //
-//fun validateKafkaConfig(config: Config): ValidatedNel<ConfigError, KafkaConfig> = run {
-//
-//    val applicationIdV = Validated.fromEither(get("kafka.applicationId", { config.getString(it) })).toValidatedNel()
-//
-//    val serversE = get("kafka.bootstrapServers", {config.getStringList(it)})
-//
-//    val serversV: ValidatedNel<ConfigError, ListK<HostAndPort>> = serversE.map { rawList ->
-//        if (rawList.isEmpty()){
-//            ConfigError.NoBootstrapServers.invalidNel<ConfigError, ListK<HostAndPort>>()
-//        } else {
-//            rawList.withIndex()
-//                .map { validateHost(it.value, it.index) }.k()
-//                .traverse(Validated.applicative<Nel<ConfigError>>(Nel.semigroup()), { it })
-//                .fix()
-//        }
-//    }.getOrHandle { it.invalidNel() }
-//
-//    // Combine
-//    ValidatedNel.applicative<Nel<ConfigError>>(Nel.semigroup()).map(applicationIdV, serversV, { KafkaConfig(it.a, it.b.list) }).fix()
-//}
-//
-//fun validateHost(rawString: String, index: Int): ValidatedNel<ConfigError, HostAndPort> = try {
-//    HostAndPort.fromString(rawString).withDefaultPort(9092).validNel<ConfigError, HostAndPort>()
-//} catch (e: IllegalArgumentException) {
-//    ConfigError.InvalidHost(rawString, index).invalidNel<ConfigError, HostAndPort>()
-//}
+
+fun validateKafkaConfig(config: Config): ValidatedNel<ConfigError, KafkaConfig> = run {
+
+    val applicationIdV = get("kafka.applicationId", { config.getString(it) })
+
+    val serversE: ValidatedNel<ConfigError, List<String>> = get("kafka.bootstrapServers", {config.getStringList(it)})
+
+    val serversV: ValidatedNel<ConfigError, List<HostAndPort>> = serversE.map { rawList ->
+        if (rawList.isEmpty()){
+            ConfigError.NoBootstrapServers.invalidNel()
+        } else {
+            rawList.withIndex().map { validateHost(it.value, it.index) }.traverseValidated { it }
+        }.fold(Monoid.list())
+    }
+
+    applicationIdV.zip(serversV) { applicationID, servers ->
+        KafkaConfig(applicationID, servers)
+    }
+}
+
+fun validateHost(rawString: String, index: Int): ValidatedNel<ConfigError, HostAndPort> = try {
+    Valid(HostAndPort.fromString(rawString).withDefaultPort(9092))
+} catch (e: IllegalArgumentException) {
+    ConfigError.InvalidHost(rawString, index).invalidNel()
+}
