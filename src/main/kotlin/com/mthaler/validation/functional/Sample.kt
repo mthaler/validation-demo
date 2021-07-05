@@ -2,7 +2,6 @@ package com.mthaler.validation.functional
 
 import arrow.core.*
 import arrow.typeclasses.Monoid
-import arrow.typeclasses.Semigroup
 import com.google.common.net.HostAndPort
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
@@ -19,19 +18,21 @@ fun main(args: Array<String>) {
 
     val config = ConfigFactory.load()
 
-//    val businessValidation = validateBusinessConfig(config)
-//    val kafkaValidation = validateKafkaConfig(config)
-//
-//    val finalValidation: ValidatedNel<ConfigError, ApplicationConfig> = Validated.applicative<Nel<ConfigError>>(Nel.semigroup())
-//        .map(kafkaValidation, businessValidation, { ApplicationConfig(it.a, it.b) }).fix()
-//
-//    val toLog = finalValidation.fold({errors ->
-//        "Invalid : " + errors.show()
-//    }, { conf ->
-//        "Valid: $conf"
-//    })
-//
-//    log.info(toLog)
+    val businessValidation = validateBusinessConfig(config)
+    val kafkaValidation = validateKafkaConfig(config)
+
+    val finalValidation = kafkaValidation.zip(businessValidation) { a, b ->
+        ApplicationConfig(a, b)
+    }
+
+
+    val toLog = finalValidation.fold({errors ->
+        "Invalid : " + errors
+    }, { conf ->
+        "Valid: $conf"
+    })
+
+    log.info(toLog)
 
 }
 
@@ -43,49 +44,38 @@ fun <A> get(path: String, extractor: (String) -> A): ValidatedNel<ConfigError, A
     ConfigError.CouldNotParse.invalidNel()
 }
 
-//fun validateBusinessConfig(config: Config): ValidatedNel<ConfigError, BusinessConfig> = run {
-//    val unvalidatedTAE = get("app.thresholdA", { p -> config.getInt(p)})
-//    val tAe = unvalidatedTAE.flatMap { unvalidatedTa ->
-//        if (unvalidatedTa < 0 )
-//            Either.Left(ConfigError.ThresholdATooLow(unvalidatedTa, 0))
-//        else
-//            Either.Right(unvalidatedTa)
-//    }
-//
-//    val unvalidatedTCE = get("app.thresholdC", { p -> config.getInt(p)})
-//    val tCe = unvalidatedTCE.flatMap { unvalidatedTc ->
-//        if (unvalidatedTc > 10000)
-//            Either.Left(ConfigError.ThresholdCTooHigh(unvalidatedTc, 10000))
-//        else
-//            Either.Right(unvalidatedTc)
-//    }
-//
-//    val unvalidatedTBE = get("app.thresholdB", {p -> config.getInt(p)})
-//
-//    val tBe = EitherT.monad<ConfigError>().binding{
-//        val ta = unvalidatedTAE.bind()
-//        val tb = unvalidatedTBE.bind()
-//        val tc = unvalidatedTCE.bind()
-//        if (ta < tb && tb < tc)
-//            Either.Right(tb).bind()
-//        else
-//            Either.Left(ConfigError.ThresholdBNotInBetween(tb, ta, tc)).bind()
-//
-//    }.fix()
-//
-//
-//    val tAV: ValidatedNel<ConfigError, Int> = Validated.fromEither(tAe).toValidatedNel()
-//    val tBV: ValidatedNel<ConfigError, Int> = Validated.fromEither(tBe).toValidatedNel()
-//    val tCV: ValidatedNel<ConfigError, Int> = Validated.fromEither(tCe).toValidatedNel()
-//
-//    ValidatedNel.applicative(Nel.semigroup<ConfigError>()).map(tAV, tBV, tCV, {
-//        val a = it.a
-//        val b = it.b
-//        val c = it.c
-//        BusinessConfig(a, b, c)
-//    }).fix()
-//}
-//
+fun validateBusinessConfig(config: Config): ValidatedNel<ConfigError, BusinessConfig> = run {
+    // Validated does not have a flatMap method, thus we need to use Either
+    val unvalidatedTAE = get("app.thresholdA", { p -> config.getInt(p)}).toEither()
+    val tAe = unvalidatedTAE.flatMap { unvalidatedTa ->
+        if (unvalidatedTa < 0 )
+            Either.Left(nonEmptyListOf(ConfigError.ThresholdATooLow(unvalidatedTa, 0)))
+        else
+            Either.Right(unvalidatedTa)
+    }.toValidated()
+
+    val unvalidatedTCE = get("app.thresholdC", { p -> config.getInt(p)}).toEither()
+    val tCe = unvalidatedTCE.flatMap { unvalidatedTc ->
+        if (unvalidatedTc > 10000)
+            Either.Left(nonEmptyListOf(ConfigError.ThresholdCTooHigh(unvalidatedTc, 10000)))
+        else
+            Either.Right(unvalidatedTc)
+    }.toValidated()
+
+    val unvalidatedTBE = get("app.thresholdB", {p -> config.getInt(p)}).toEither()
+
+    val tBe = unvalidatedTAE.flatMap { ta -> unvalidatedTBE.flatMap { tb -> unvalidatedTCE.flatMap { tc ->
+        if (ta < tb && tb < tc)
+            Either.Right(tb)
+        else
+            Either.Left(nonEmptyListOf(ConfigError.ThresholdBNotInBetween(tb, ta, tc)))
+    } } }.toValidated()
+
+
+    tAe.zip(tBe, tCe) { a, b, c ->
+        BusinessConfig(a, b, c)
+    }
+}
 
 fun validateKafkaConfig(config: Config): ValidatedNel<ConfigError, KafkaConfig> = run {
 
