@@ -42,30 +42,30 @@ fun <A> get(path: String, extractor: (String) -> A): ValidatedNel<ConfigError, A
 
 fun validateBusinessConfig(config: Config): ValidatedNel<ConfigError, BusinessConfig> = run {
     // Validated does not have a flatMap method, thus we need to use Either
-    val unvalidatedTAE = get("app.thresholdA", { p -> config.getInt(p)}).toEither()
+    val unvalidatedTAE = get("app.thresholdA", { p -> config.getInt(p)})
     val tAe = unvalidatedTAE.flatMap { unvalidatedTa ->
         if (unvalidatedTa < 0 )
-            Either.Left(nonEmptyListOf(ConfigError.ThresholdATooLow(unvalidatedTa, 0)))
+            ConfigError.ThresholdATooLow(unvalidatedTa, 0).invalidNel()
         else
-            Either.Right(unvalidatedTa)
-    }.toValidated()
+            Valid(unvalidatedTa)
+    }
 
-    val unvalidatedTCE = get("app.thresholdC", { p -> config.getInt(p)}).toEither()
+    val unvalidatedTCE = get("app.thresholdC", { p -> config.getInt(p)})
     val tCe = unvalidatedTCE.flatMap { unvalidatedTc ->
         if (unvalidatedTc > 10000)
-            Either.Left(nonEmptyListOf(ConfigError.ThresholdCTooHigh(unvalidatedTc, 10000)))
+            ConfigError.ThresholdCTooHigh(unvalidatedTc, 10000).invalidNel()
         else
-            Either.Right(unvalidatedTc)
-    }.toValidated()
+            Valid(unvalidatedTc)
+    }
 
-    val unvalidatedTBE = get("app.thresholdB", {p -> config.getInt(p)}).toEither()
+    val unvalidatedTBE = get("app.thresholdB", {p -> config.getInt(p)})
 
     val tBe = unvalidatedTAE.flatMap { ta -> unvalidatedTBE.flatMap { tb -> unvalidatedTCE.flatMap { tc ->
         if (ta < tb && tb < tc)
-            Either.Right(tb)
+            Valid(tb)
         else
-            Either.Left(nonEmptyListOf(ConfigError.ThresholdBNotInBetween(tb, ta, tc)))
-    } } }.toValidated()
+            ConfigError.ThresholdBNotInBetween(tb, ta, tc).invalidNel()
+    } } }
 
 
     tAe.zip(tBe, tCe) { a, b, c ->
