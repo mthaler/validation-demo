@@ -2,7 +2,7 @@ package com.mthaler.validation.idiomatic
 
 object ConfigErrors {
 
-    internal interface ConfigError
+    interface ConfigError
 
     internal class CouldNotParse : ConfigError
 
