@@ -8,10 +8,6 @@ import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
-/**
- *
- */
-
 fun main(args: Array<String>) {
 
     val log = LoggerFactory.getLogger("KotlinArrowSample")
