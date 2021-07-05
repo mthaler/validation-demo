@@ -1,6 +1,6 @@
 package com.mthaler.validation.idiomatic
 
-class ConfigErrors private constructor() {
+object ConfigErrors {
 
     internal interface ConfigError
 
