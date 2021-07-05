@@ -1,4 +1,4 @@
-package com.mthaler.validation.arrow
+package com.mthaler.validation.functional
 
 import com.google.common.net.HostAndPort
 
