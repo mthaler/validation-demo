@@ -5,4 +5,4 @@ import javax.validation.constraints.Min
 import javax.validation.constraints.Max
 
 @ThresholdConstraint
-class BusinessConfig(@Min(0) var thresholdA: Int, var thresholdB: Int, @Max(10000) var thresholdC: Int)
+class BusinessConfig(@field:Min(0) var thresholdA: Int, var thresholdB: Int, @field:Max(10000) var thresholdC: Int)
