@@ -1,4 +1,4 @@
-package com.mthaler.validation.functional.domainmodeling
+package com.mthaler.validation.functional
 
 import arrow.core.*
 import kotlinx.coroutines.launch
